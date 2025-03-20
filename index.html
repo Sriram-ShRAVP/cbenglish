@@ -4,45 +4,84 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>English Speaking Challenge</title>
+  <!-- Google Font: Roboto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     /* Global Styles */
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Roboto', sans-serif;
       margin: 0;
       padding: 0;
-      background: #f4f4f4;
+      background: #fafafa;
+      color: #333;
       scroll-behavior: smooth;
     }
     .container {
-      width: 90%;
       max-width: 1200px;
       margin: 20px auto;
       padding: 20px;
       background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    h1, h2 {
+    h1, h2, h3 {
       text-align: center;
-      color: #333;
+      margin-bottom: 20px;
+    }
+    /* Login Form Styles */
+    .login-container {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .login-container h2 {
+      margin-bottom: 20px;
+    }
+    .login-container input[type="text"],
+    .login-container input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .login-container button {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .login-container button:hover {
+      background: #45a049;
     }
     /* Participant Card Styles */
     .participant {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 20px;
+      padding: 15px 20px;
       margin: 10px 0;
-      background: #e8f0fe;
-      border-radius: 8px;
+      background: #e3f2fd;
+      border-radius: 10px;
       transition: background 0.3s ease;
     }
     .participant:hover {
-      background: #d0e0fc;
+      background: #cfe0fc;
     }
     .name {
       font-size: 1.2em;
-      font-weight: bold;
+      font-weight: 500;
       flex: 1;
     }
     .score {
@@ -59,12 +98,12 @@
       display: flex;
       align-items: center;
     }
-    button {
+    button.action {
       font-size: 1em;
       padding: 10px 15px;
       margin: 0 5px;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s ease;
     }
@@ -73,7 +112,7 @@
       color: #fff;
     }
     .plus:hover {
-      background: #45a049;
+      background: #43a047;
     }
     .minus {
       background: #f44336;
@@ -94,105 +133,206 @@
       padding: 10px;
       border-bottom: 1px solid #ddd;
     }
+    /* Date Picker */
+    .date-picker {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .date-picker input {
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    /* Hide sections initially */
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <!-- Login Section -->
+  <div id="loginSection" class="login-container">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button id="loginBtn">Login</button>
+    <p id="loginError" style="color:red;text-align:center;"></p>
+  </div>
+
+  <!-- Main App Section -->
+  <div id="appSection" class="container hidden">
     <h1>English Speaking Challenge</h1>
-    <div id="participants">
-      <!-- Participant cards will be injected here -->
+    <!-- Admin-only participant controls -->
+    <div id="adminControls" class="hidden">
+      <div id="participants">
+        <!-- Participant cards will be injected here -->
+      </div>
     </div>
+    <!-- Date Picker to view stats for a specific day -->
+    <div class="date-picker">
+      <label for="viewDate">View stats for date: </label>
+      <input type="date" id="viewDate" />
+    </div>
+    <!-- Leaderboard / Daily Stats -->
     <div class="leaderboard">
-      <h2>Leaderboard</h2>
+      <h2 id="leaderboardTitle">Leaderboard</h2>
       <ul id="leaderboard-list" class="leaderboard-list"></ul>
     </div>
   </div>
 
   <script>
+    // Hardcoded Admin Credentials
+    const ADMIN_USERNAME = "cbsriram123";
+    const ADMIN_PASSWORD = "6205vcom";
+
     // List of participants
     const participants = ['Sakshi', 'Sriram', 'Lokesh', 'Akshitha', 'Ashraf Bhai'];
 
-    // Load or initialize scores from localStorage
+    // Overall scores and daily stats storage (using localStorage)
     const storedScores = JSON.parse(localStorage.getItem('scores')) || {};
+    const storedDailyStats = JSON.parse(localStorage.getItem('dailyStats')) || {};
+    const today = new Date().toISOString().split('T')[0]; // format: YYYY-MM-DD
+
+    // Initialize scores if not set
     participants.forEach(name => {
       if (storedScores[name] === undefined) {
         storedScores[name] = 0;
       }
+      // Initialize today's daily stat if not set
+      if (!storedDailyStats[today]) {
+        storedDailyStats[today] = {};
+      }
+      if (storedDailyStats[today][name] === undefined) {
+        storedDailyStats[today][name] = 0;
+      }
     });
 
-    // Save scores to localStorage
+    // Save functions
     function saveScores() {
       localStorage.setItem('scores', JSON.stringify(storedScores));
     }
+    function saveDailyStats() {
+      localStorage.setItem('dailyStats', JSON.stringify(storedDailyStats));
+    }
 
-    // Update the leaderboard
-    function updateLeaderboard() {
+    // Update overall leaderboard (based on overall scores)
+    function updateLeaderboard(date = null) {
       const leaderboardList = document.getElementById('leaderboard-list');
       leaderboardList.innerHTML = '';
+      let data = {};
+      if (date && storedDailyStats[date]) {
+        data = storedDailyStats[date];
+        document.getElementById('leaderboardTitle').textContent = `Leaderboard for ${date}`;
+      } else {
+        data = storedScores;
+        document.getElementById('leaderboardTitle').textContent = "Overall Leaderboard";
+      }
       // Sort participants by score in descending order
-      const sorted = [...participants].sort((a, b) => storedScores[b] - storedScores[a]);
+      const sorted = [...participants].sort((a, b) => data[b] - data[a]);
       sorted.forEach(name => {
         const li = document.createElement('li');
-        li.textContent = `${name}: ${storedScores[name]} points`;
+        li.textContent = `${name}: ${data[name]} points`;
         leaderboardList.appendChild(li);
       });
     }
 
-    // Update score and animate score change
+    // Update score (and daily stats) with animation
     function updateScore(name, delta, scoreElement) {
       storedScores[name] += delta;
       saveScores();
+      // Update daily stats for today
+      if (!storedDailyStats[today]) storedDailyStats[today] = {};
+      if (storedDailyStats[today][name] === undefined) storedDailyStats[today][name] = 0;
+      storedDailyStats[today][name] += delta;
+      saveDailyStats();
+
       scoreElement.textContent = storedScores[name];
       scoreElement.classList.add('updated');
       setTimeout(() => scoreElement.classList.remove('updated'), 200);
-      updateLeaderboard();
+      // Update leaderboard (for both overall and current selected date if applicable)
+      const selectedDate = document.getElementById('viewDate').value;
+      if (selectedDate) {
+        updateLeaderboard(selectedDate);
+      } else {
+        updateLeaderboard();
+      }
     }
 
-    // Create participant cards
-    const participantsDiv = document.getElementById('participants');
-    participants.forEach(name => {
-      // Create card container
-      const card = document.createElement('div');
-      card.className = 'participant';
+    // Render participant cards for admin controls
+    function renderParticipants() {
+      const participantsDiv = document.getElementById('participants');
+      participantsDiv.innerHTML = '';
+      participants.forEach(name => {
+        const card = document.createElement('div');
+        card.className = 'participant';
+        // Name element
+        const nameEl = document.createElement('div');
+        nameEl.className = 'name';
+        nameEl.textContent = name;
+        // Buttons container (only for admin)
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'buttons';
+        const minusBtn = document.createElement('button');
+        minusBtn.className = 'action minus';
+        minusBtn.textContent = '−';
+        const plusBtn = document.createElement('button');
+        plusBtn.className = 'action plus';
+        plusBtn.textContent = '+';
+        // Score display element
+        const scoreEl = document.createElement('div');
+        scoreEl.className = 'score';
+        scoreEl.textContent = storedScores[name];
+        // Attach events for admin controls
+        plusBtn.addEventListener('click', () => updateScore(name, 5, scoreEl));
+        minusBtn.addEventListener('click', () => updateScore(name, -1, scoreEl));
+        // Assemble elements
+        buttonsDiv.appendChild(minusBtn);
+        buttonsDiv.appendChild(plusBtn);
+        card.appendChild(nameEl);
+        card.appendChild(buttonsDiv);
+        card.appendChild(scoreEl);
+        participantsDiv.appendChild(card);
+      });
+    }
 
-      // Create name element
-      const nameEl = document.createElement('div');
-      nameEl.className = 'name';
-      nameEl.textContent = name;
+    // Login functionality
+    document.getElementById('loginBtn').addEventListener('click', function() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const loginError = document.getElementById('loginError');
+      loginError.textContent = '';
 
-      // Create buttons container
-      const buttonsDiv = document.createElement('div');
-      buttonsDiv.className = 'buttons';
-
-      // Create minus button
-      const minusBtn = document.createElement('button');
-      minusBtn.className = 'minus';
-      minusBtn.textContent = '−';
-      // Create plus button
-      const plusBtn = document.createElement('button');
-      plusBtn.className = 'plus';
-      plusBtn.textContent = '+';
-
-      // Create score display
-      const scoreEl = document.createElement('div');
-      scoreEl.className = 'score';
-      scoreEl.textContent = storedScores[name];
-
-      // Add event listeners to buttons
-      plusBtn.addEventListener('click', () => updateScore(name, 5, scoreEl));
-      minusBtn.addEventListener('click', () => updateScore(name, -1, scoreEl));
-
-      // Assemble card elements
-      buttonsDiv.appendChild(minusBtn);
-      buttonsDiv.appendChild(plusBtn);
-      card.appendChild(nameEl);
-      card.appendChild(buttonsDiv);
-      card.appendChild(scoreEl);
-      participantsDiv.appendChild(card);
+      // Determine role based on credentials
+      let role = '';
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        role = 'admin';
+      } else {
+        // For simplicity, any other username/password gives viewer access.
+        role = 'viewer';
+      }
+      // Hide login section and show main app section
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('appSection').classList.remove('hidden');
+      // If admin, render full participant controls; if viewer, hide them.
+      if (role === 'admin') {
+        document.getElementById('adminControls').classList.remove('hidden');
+        renderParticipants();
+      } else {
+        document.getElementById('adminControls').classList.add('hidden');
+      }
+      // Always show overall leaderboard on login
+      updateLeaderboard();
     });
 
-    // Initial leaderboard update
-    updateLeaderboard();
+    // Date Picker event to view daily stats
+    document.getElementById('viewDate').addEventListener('change', function() {
+      const selectedDate = this.value;
+      updateLeaderboard(selectedDate);
+    });
+
+    // Set default date picker value to today
+    document.getElementById('viewDate').value = today;
   </script>
 </body>
 </html>
