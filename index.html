@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Speaking Challenge</title>
+  <style>
+    /* Global Styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      scroll-behavior: smooth;
+    }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    /* Participant Card Styles */
+    .participant {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      margin: 10px 0;
+      background: #e8f0fe;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+    }
+    .participant:hover {
+      background: #d0e0fc;
+    }
+    .name {
+      font-size: 1.2em;
+      font-weight: bold;
+      flex: 1;
+    }
+    .score {
+      font-size: 1.2em;
+      margin: 0 20px;
+      transition: transform 0.2s ease;
+      min-width: 40px;
+      text-align: center;
+    }
+    .score.updated {
+      transform: scale(1.2);
+    }
+    .buttons {
+      display: flex;
+      align-items: center;
+    }
+    button {
+      font-size: 1em;
+      padding: 10px 15px;
+      margin: 0 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .plus {
+      background: #4CAF50;
+      color: #fff;
+    }
+    .plus:hover {
+      background: #45a049;
+    }
+    .minus {
+      background: #f44336;
+      color: #fff;
+    }
+    .minus:hover {
+      background: #e53935;
+    }
+    /* Leaderboard Styles */
+    .leaderboard {
+      margin-top: 40px;
+    }
+    .leaderboard-list {
+      list-style: none;
+      padding: 0;
+    }
+    .leaderboard-list li {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>English Speaking Challenge</h1>
+    <div id="participants">
+      <!-- Participant cards will be injected here -->
+    </div>
+    <div class="leaderboard">
+      <h2>Leaderboard</h2>
+      <ul id="leaderboard-list" class="leaderboard-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    // List of participants
+    const participants = ['Sakshi', 'Sriram', 'Lokesh', 'Akshitha', 'Ashraf Bhai'];
+
+    // Load or initialize scores from localStorage
+    const storedScores = JSON.parse(localStorage.getItem('scores')) || {};
+    participants.forEach(name => {
+      if (storedScores[name] === undefined) {
+        storedScores[name] = 0;
+      }
+    });
+
+    // Save scores to localStorage
+    function saveScores() {
+      localStorage.setItem('scores', JSON.stringify(storedScores));
+    }
+
+    // Update the leaderboard
+    function updateLeaderboard() {
+      const leaderboardList = document.getElementById('leaderboard-list');
+      leaderboardList.innerHTML = '';
+      // Sort participants by score in descending order
+      const sorted = [...participants].sort((a, b) => storedScores[b] - storedScores[a]);
+      sorted.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = `${name}: ${storedScores[name]} points`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    // Update score and animate score change
+    function updateScore(name, delta, scoreElement) {
+      storedScores[name] += delta;
+      saveScores();
+      scoreElement.textContent = storedScores[name];
+      scoreElement.classList.add('updated');
+      setTimeout(() => scoreElement.classList.remove('updated'), 200);
+      updateLeaderboard();
+    }
+
+    // Create participant cards
+    const participantsDiv = document.getElementById('participants');
+    participants.forEach(name => {
+      // Create card container
+      const card = document.createElement('div');
+      card.className = 'participant';
+
+      // Create name element
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = name;
+
+      // Create buttons container
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.className = 'buttons';
+
+      // Create minus button
+      const minusBtn = document.createElement('button');
+      minusBtn.className = 'minus';
+      minusBtn.textContent = '−';
+      // Create plus button
+      const plusBtn = document.createElement('button');
+      plusBtn.className = 'plus';
+      plusBtn.textContent = '+';
+
+      // Create score display
+      const scoreEl = document.createElement('div');
+      scoreEl.className = 'score';
+      scoreEl.textContent = storedScores[name];
+
+      // Add event listeners to buttons
+      plusBtn.addEventListener('click', () => updateScore(name, 5, scoreEl));
+      minusBtn.addEventListener('click', () => updateScore(name, -1, scoreEl));
+
+      // Assemble card elements
+      buttonsDiv.appendChild(minusBtn);
+      buttonsDiv.appendChild(plusBtn);
+      card.appendChild(nameEl);
+      card.appendChild(buttonsDiv);
+      card.appendChild(scoreEl);
+      participantsDiv.appendChild(card);
+    });
+
+    // Initial leaderboard update
+    updateLeaderboard();
+  </script>
+</body>
+</html>
